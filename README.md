@@ -3,7 +3,7 @@
 <h2>Project Steps</h2>
 <ul>
   <li>
-    0. 0. Redis Utils
+    0. Redis Utils
     Creating the RedisClient class in redis.js, we imported the redis library and set up Redis client methods to manage connections, retrieve, set, and delete values.
   </li>
   <li>
