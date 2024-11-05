@@ -1,4 +1,3 @@
-// utils/db.js
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
 
@@ -14,26 +13,21 @@ class DBClient {
     this.client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
     this.database = this.client.db(database);
 
-    // Connect to MongoDB server
     this.client.connect().catch((error) => console.error('MongoDB connection error:', error));
   }
 
-  // Method to check if MongoDB connection is alive
   isAlive() {
     return this.client.isConnected();
   }
 
-  // Asynchronous method to count the number of users
   async nbUsers() {
     return this.database.collection('users').countDocuments();
   }
 
-  // Asynchronous method to count the number of files
   async nbFiles() {
     return this.database.collection('files').countDocuments();
   }
 }
 
-// Create and export an instance of DBClient
 const dbClient = new DBClient();
 export default dbCl
