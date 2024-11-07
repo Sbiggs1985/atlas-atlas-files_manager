@@ -1,29 +1,41 @@
-// utils/db.js
-
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 class DBClient {
   constructor() {
-    const host = process.env.DB_HOST || 'localhost';
-    const port = process.env.DB_PORT || '27017';
-    const database = process.env.DB_DATABASE || 'files_manager';
-
-    const uri = `mongodb://${host}:${port}`;
+    const uri = `mongodb+srv://fmproject:atlasschool@atlas.da3zi.mongodb.net/?retryWrites=true&w=majority&appName=Atlas`;
     this.client = new MongoClient(uri, { useUnifiedTopology: true });
-    this.db = this.client.db(database);
+    this.db = null;
+  }
 
-    this.client.connect().catch((error) => {
+  // Asynchronous connect method
+  async connect() {
+    try {
+      await this.client.connect(); // Await the connection
+      this.db = this.client.db('files_manager');
+      console.log('MongoDB connected');
+    } catch (error) {
       console.error('MongoDB connection error:', error);
-    });
+      throw error; // Throw error to properly handle connection failure
+    }
   }
 
-  isAlive() {
-    return this.client.isConnected();
+  // Check if MongoDB client is connected
+  async isAlive() {
+    try {
+      // A simple ping to check if the client is connected
+      await this.client.db().command({ ping: 1 });
+      return true;
+    } catch (error) {
+      console.error('MongoDB is not alive:', error);
+      return false;
+    }
   }
 
+  // Get the number of users in the 'users' collection
   async nbUsers() {
     try {
+      await this.connect(); // Ensure the connection is established before querying
       const count = await this.db.collection('users').countDocuments();
       return count;
     } catch (error) {
@@ -32,8 +44,10 @@ class DBClient {
     }
   }
 
+  // Get the number of files in the 'files' collection
   async nbFiles() {
     try {
+      await this.connect(); // Ensure the connection is established before querying
       const count = await this.db.collection('files').countDocuments();
       return count;
     } catch (error) {
