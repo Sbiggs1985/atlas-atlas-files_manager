@@ -1,4 +1,4 @@
-import promisify from utils
+import { promisify } from 'util';
 
 const redis = require('redis');
 const client = redis.createClient();
@@ -11,12 +11,14 @@ const redisClient = {
   },
   // Get value from key
   async get(key) {
-    const asyncGet = promisify(this.client.get).bind(this.client);
+    // Fix: changed 'this.client' to directly use 'client'
+    const asyncGet = promisify(client.get).bind(client);
     return asyncGet(key);
   },
   // Set key with value and duration
   async set(key, value, duration) {
-    const asyncSet = promisify(this.client.setex).bind(this.client);
+    // Fix: changed 'this.client' to directly use 'client'
+    const asyncSet = promisify(client.setex).bind(client);
     return asyncSet(key, duration, value);
   }
 };

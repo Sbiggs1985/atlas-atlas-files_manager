@@ -23,14 +23,17 @@ class DBClient {
   // Check if MongoDB client is connected
   async isAlive() {
     try {
-      // A simple ping to check if the client is connected
-      await this.client.db().command({ ping: 1 });
-      return true;
+      // This will initiate the connection if not already connected
+      await this.client.connect();
+      
+      // Check the state of the topology
+      return this.client.topology && this.client.topology.isConnected();
     } catch (error) {
-      console.error('MongoDB is not alive:', error);
+      console.error('Connection failed:', error);
       return false;
     }
   }
+  
 
   // Get the number of users in the 'users' collection
   async nbUsers() {
