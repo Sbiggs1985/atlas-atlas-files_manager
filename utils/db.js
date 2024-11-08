@@ -1,39 +1,33 @@
+// /utils/db.js
 const { MongoClient } = require('mongodb');
 require('dotenv').config();
 
 class DBClient {
   constructor() {
-    const uri = `mongodb+srv://fmproject:atlasschool@atlas.da3zi.mongodb.net/?retryWrites=true&w=majority&appName=Atlas`;
+    const uri = process.env.MONGO_URI || `mongodb+srv://fmproject:atlasschool@atlas.da3zi.mongodb.net/?retryWrites=true&w=majority&appName=Atlas`;
     this.client = new MongoClient(uri, { useUnifiedTopology: true });
     this.db = null;
+    this.isConnected = false; // Track if the connection is established
   }
 
-  // Asynchronous connect method
+  // Asynchronous connect method (ensures single connection)
   async connect() {
+    if (this.isConnected) {
+      // If already connected, return the current DB instance
+      return this.db;
+    }
+
     try {
       await this.client.connect(); // Await the connection
       this.db = this.client.db('files_manager');
+      this.isConnected = true;
       console.log('MongoDB connected');
+      return this.db;
     } catch (error) {
       console.error('MongoDB connection error:', error);
       throw error; // Throw error to properly handle connection failure
     }
   }
-
-  // Check if MongoDB client is connected
-  async isAlive() {
-    try {
-      // This will initiate the connection if not already connected
-      await this.client.connect();
-      
-      // Check the state of the topology
-      return this.client.topology && this.client.topology.isConnected();
-    } catch (error) {
-      console.error('Connection failed:', error);
-      return false;
-    }
-  }
-  
 
   // Get the number of users in the 'users' collection
   async nbUsers() {
