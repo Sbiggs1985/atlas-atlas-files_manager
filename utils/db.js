@@ -29,6 +29,17 @@ class DBClient {
     }
   }
 
+  // Check if the connection is alive
+  async isAlive() {
+    try {
+      await this.connect(); // Ensure the connection is established before checking
+      return this.isConnected; // Return whether the connection is established
+    } catch (error) {
+      console.error('Error checking DB connection:', error);
+      return false; // If any error, consider it as not alive
+    }
+  }
+
   // Get the number of users in the 'users' collection
   async nbUsers() {
     try {
