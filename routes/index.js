@@ -1,9 +1,9 @@
 // Added routes for new endpoint for task 4
 const express = require('express');
 const router = express.Router();
-const AppController = require('../controllers/AppController');
-const UsersController = require('../controllers/UsersController');
-const AuthController = require('../controllers/AuthController'); // Import AuthController
+const AppController = require('../controllers/AppController.js');
+const UsersController = require('../controllers/UsersController.js');
+const AuthController = require('../controllers/AuthController.js');
 
 router.get('/status', AppController.getStatus);
 router.get('/stats', AppController.getStats);
