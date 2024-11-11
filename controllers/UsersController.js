@@ -1,43 +1,36 @@
-// controllers/UsersController.js
+// Added the new getMe endpoint while retaining existing postNew endpoint
 const crypto = require('crypto');
-const dbClient = require('../utils/db'); // Import dbClient
+const dbClient = require('../utils/db');
+const redisClient = require('../utils/redis');
 
-// POST /users handler
 const postNew = async (req, res) => {
   const { email, password } = req.body;
 
-  // Check if email is provided
   if (!email) {
     return res.status(400).json({ error: 'Missing email' });
   }
 
-  // Check if password is provided
   if (!password) {
     return res.status(400).json({ error: 'Missing password' });
   }
 
   try {
-    // Ensure DB connection is established
     if (!dbClient.db) {
       return res.status(500).json({ error: 'Database connection error' });
     }
 
-    // Check if the email already exists in DB
     const existingUser = await dbClient.db.collection('users').findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'Already exist' });
     }
 
-    // Hash the password using SHA1
     const hashedPassword = crypto.createHash('sha1').update(password).digest('hex');
 
-    // Insert the new user into the DB
     const result = await dbClient.db.collection('users').insertOne({
       email,
       password: hashedPassword,
     });
 
-    // Return the new user's id and email (MongoDB generates the ID)
     return res.status(201).json({
       id: result.insertedId.toString(),
       email,
@@ -48,4 +41,26 @@ const postNew = async (req, res) => {
   }
 };
 
-module.exports = { postNew };
+const getMe = async (req, res) => {
+  const token = req.headers['x-token'];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const tokenKey = `auth_${token}`;
+  const userId = await redisClient.get(tokenKey);
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const user = await dbClient.db.collection('users').findOne({ _id: dbClient.getObjectId(userId) });
+  if (!user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  res.status(200).json({ id: user._id.toString(), email: user.email });
+};
+
+module.exports = { postNew, getMe };
