@@ -9,15 +9,18 @@ const FilesController = require('../controllers/FilesController.js');
 router.get('/status', AppController.getStatus);
 router.get('/stats', AppController.getStats);
 router.post('/users', UsersController.postNew);
-router.get('/connect', AuthController.getConnect); // Sign-in route
-router.get('/disconnect', AuthController.getDisconnect); // Sign-out route
-router.get('/users/me', UsersController.getMe); // User profile route
+router.get('/connect', AuthController.getConnect);
+router.get('/disconnect', AuthController.getDisconnect);
+router.get('/users/me', UsersController.getMe);
 router.post('/files', FilesController.postUpload);
+
+// New routes added
 router.get('/files/:id', FilesController.getShow);
 router.get('/files', FilesController.getIndex);
-
-// **New routes for publish and unpublish**
 router.put('/files/:id/publish', FilesController.putPublish);
 router.put('/files/:id/unpublish', FilesController.putUnpublish);
+
+// ** New endpoint to get file content by ID **
+router.get('/files/:id/data', FilesController.getFile);
 
 module.exports = router;
