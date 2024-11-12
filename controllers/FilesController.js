@@ -78,7 +78,8 @@ class FilesController {
     }
   }
 
-  static async getShow(req, res) {
+  // **New method: putPublish**
+  static async putPublish(req, res) {
     const token = req.headers['x-token'];
     const { id } = req.params;
 
@@ -93,21 +94,23 @@ class FilesController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const file = await dbClient.db.collection('files').findOne({
-      _id: dbClient.getObjectId(id),
-      userId: dbClient.getObjectId(userId),
-    });
+    const file = await dbClient.db.collection('files').findOneAndUpdate(
+      { _id: dbClient.getObjectId(id), userId: dbClient.getObjectId(userId) },
+      { $set: { isPublic: true } },
+      { returnOriginal: false }
+    );
 
-    if (!file) {
+    if (!file.value) {
       return res.status(404).json({ error: 'Not found' });
     }
 
-    res.status(200).json(file);
+    res.status(200).json(file.value);
   }
 
-  static async getIndex(req, res) {
+  // **New method: putUnpublish**
+  static async putUnpublish(req, res) {
     const token = req.headers['x-token'];
-    const { parentId = 0, page = 0 } = req.query;
+    const { id } = req.params;
 
     if (!token) {
       return res.status(401).json({ error: 'Unauthorized' });
@@ -120,19 +123,17 @@ class FilesController {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const skip = parseInt(page, 10) * 20;
-    const limit = 20;
+    const file = await dbClient.db.collection('files').findOneAndUpdate(
+      { _id: dbClient.getObjectId(id), userId: dbClient.getObjectId(userId) },
+      { $set: { isPublic: false } },
+      { returnOriginal: false }
+    );
 
-    const files = await dbClient.db.collection('files')
-      .find({
-        userId: dbClient.getObjectId(userId),
-        parentId: parentId === '0' ? 0 : dbClient.getObjectId(parentId),
-      })
-      .skip(skip)
-      .limit(limit)
-      .toArray();
+    if (!file.value) {
+      return res.status(404).json({ error: 'Not found' });
+    }
 
-    res.status(200).json(files);
+    res.status(200).json(file.value);
   }
 }
 
