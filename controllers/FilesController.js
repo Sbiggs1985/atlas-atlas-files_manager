@@ -3,8 +3,8 @@ import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import redisClient from '../utils/redis.js';
 import dbClient from '../utils/db.js';
-import Bull from 'bull';  // Bull for background jobs
-import imageThumbnail from 'image-thumbnail';  // Module to generate thumbnails
+import Bull from 'bull';
+import imageThumbnail from 'image-thumbnail';
 
 const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
 

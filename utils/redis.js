@@ -1,5 +1,5 @@
 // /utils/redis.js
-import { promisify } from 'util';
+const promisify = require('util');
 
 const redis = require('redis');
 const client = redis.createClient();
