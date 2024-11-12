@@ -1,7 +1,9 @@
+// /controllers/FilesController.js
+
 const { v4: uuidv4 } = require('uuid');
 const sha1 = require('sha1');
-const redisClient = require('../utils/redis'); // Ensure Redis client is available here
-const dbClient = require('../utils/db'); // Ensure MongoDB client is available here
+const redisClient = require('../utils/redis');
+const dbClient = require('../utils/db');
 
 class AuthController {
   static async getConnect(req, res) {

@@ -1,10 +1,12 @@
-import fs from 'fs';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import redisClient from '../utils/redis.js';
-import dbClient from '../utils/db.js';
-import Bull from 'bull';
-import imageThumbnail from 'image-thumbnail';
+// /controllers/FilesController.js
+
+const fs = require('fs');
+const path = require('path');
+const { v4: uuidv4 } = require('uuid');
+const redisClient = require('../utils/redis');
+const dbClient = require('../utils/db');
+const Bull = require('bull');
+const imageThumbnail = require('image-thumbnail');
 
 const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
 

@@ -1,8 +1,10 @@
-import Bull from 'bull';
-import dbClient from './utils/db.js';
-import imageThumbnail from 'image-thumbnail';
-import fs from 'fs';
-import path from 'path';
+// /controllers/worker.js
+
+const Bull = require('bull');
+const dbClient = require('./utils/db');
+const imageThumbnail = require('image-thumbnail');
+const fs = require('fs');
+const path = require('path');
 
 // Create a Bull queue for file jobs
 const fileQueue = new Bull('fileQueue', {

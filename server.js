@@ -1,7 +1,9 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import router from './routes/index.js';
-import dbClient from './utils/db.js';
+// server.js
+
+const express = require('express');
+const dotenv = require('dotenv');
+const router = require('./routes/index.js');
+const dbClient = require('./utils/db.js');
 
 dotenv.config();
 
