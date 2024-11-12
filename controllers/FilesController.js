@@ -1,17 +1,24 @@
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import mime from 'mime-types';
 import redisClient from '../utils/redis.js';
 import dbClient from '../utils/db.js';
+import Bull from 'bull';  // Bull for background jobs
+import imageThumbnail from 'image-thumbnail';  // Module to generate thumbnails
 
 const FOLDER_PATH = process.env.FOLDER_PATH || '/tmp/files_manager';
+
+// Create a Bull queue for file jobs
+const fileQueue = new Bull('fileQueue', {
+  redis: { host: 'localhost', port: 6379 }, // Redis configuration
+});
 
 if (!fs.existsSync(FOLDER_PATH)) {
   fs.mkdirSync(FOLDER_PATH, { recursive: true });
 }
 
 class FilesController {
+  // **Updated postUpload with background job**
   static async postUpload(req, res) {
     const { name, type, parentId = 0, isPublic = false, data } = req.body;
     const token = req.headers['x-token'];
@@ -72,6 +79,14 @@ class FilesController {
       const result = await dbClient.db.collection('files').insertOne(newFile);
       const file = result.ops[0];
 
+      // If the file is an image, add a job to the queue for thumbnail generation
+      if (type === 'image') {
+        fileQueue.add({
+          userId,
+          fileId: file._id.toString(),
+        });
+      }
+
       res.status(201).json(file);
     } catch (error) {
       console.error('Error creating file:', error);
@@ -79,68 +94,14 @@ class FilesController {
     }
   }
 
-  // Method to publish a file
-  static async putPublish(req, res) {
-    const token = req.headers['x-token'];
-    const { id } = req.params;
-
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const tokenKey = `auth_${token}`;
-    const userId = await redisClient.get(tokenKey);
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const file = await dbClient.db.collection('files').findOneAndUpdate(
-      { _id: dbClient.getObjectId(id), userId: dbClient.getObjectId(userId) },
-      { $set: { isPublic: true } },
-      { returnOriginal: false }
-    );
-
-    if (!file.value) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-
-    res.status(200).json(file.value);
-  }
-
-  // Method to unpublish a file
-  static async putUnpublish(req, res) {
-    const token = req.headers['x-token'];
-    const { id } = req.params;
-
-    if (!token) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const tokenKey = `auth_${token}`;
-    const userId = await redisClient.get(tokenKey);
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const file = await dbClient.db.collection('files').findOneAndUpdate(
-      { _id: dbClient.getObjectId(id), userId: dbClient.getObjectId(userId) },
-      { $set: { isPublic: false } },
-      { returnOriginal: false }
-    );
-
-    if (!file.value) {
-      return res.status(404).json({ error: 'Not found' });
-    }
-
-    res.status(200).json(file.value);
-  }
-
-  // **New method: getFile**
+  // **Updated getFile method to handle size query**
   static async getFile(req, res) {
     const { id } = req.params;
-    const token = req.headers['x-token'];
+    const { size } = req.query;
+
+    if (![500, 250, 100].includes(Number(size))) {
+      return res.status(400).json({ error: 'Invalid size parameter. Valid sizes are 500, 250, 100.' });
+    }
 
     const file = await dbClient.db.collection('files').findOne({ _id: dbClient.getObjectId(id) });
 
@@ -148,26 +109,31 @@ class FilesController {
       return res.status(404).json({ error: 'Not found' });
     }
 
+    // If the file is not public and the user is not authenticated or the owner
+    const token = req.headers['x-token'];
     const userId = token ? await redisClient.get(`auth_${token}`) : null;
-    const isOwner = userId && userId === file.userId.toString();
 
-    if (!file.isPublic && !isOwner) {
+    if (!file.isPublic && (!userId || userId !== file.userId.toString())) {
       return res.status(404).json({ error: 'Not found' });
     }
 
+    // If the file is a folder
     if (file.type === 'folder') {
       return res.status(400).json({ error: "A folder doesn't have content" });
     }
 
-    if (!fs.existsSync(file.localPath)) {
+    // Check if the thumbnail for the requested size exists
+    const thumbnailPath = path.join(FOLDER_PATH, `${file.localPath}_${size}`);
+
+    if (!fs.existsSync(thumbnailPath)) {
       return res.status(404).json({ error: 'Not found' });
     }
 
-    const mimeType = mime.lookup(file.name);
-    res.setHeader('Content-Type', mimeType || 'application/octet-stream');
+    // Return the thumbnail with the correct MIME type
+    const mimeType = require('mime-types').lookup(thumbnailPath);
+    res.setHeader('Content-Type', mimeType);
 
-    const fileContent = fs.readFileSync(file.localPath);
-    res.status(200).send(fileContent);
+    fs.createReadStream(thumbnailPath).pipe(res);
   }
 }
 
